@@ -17,11 +17,14 @@ public class Player : Unit
             SwitchSkillEvnt.AddListener(SwitchSkill);
             StartCastingEvnt.AddListener(Cooldown);
         }
+        OnHit.AddListener(triggerShield);
     }
 
     void Cooldown()
     {
-        FloatingCanvasLeft.Instance.SetCooldown(SkillTable.CurrentSkill.Data.Cooldown);
+        SkillType type = SkillTable.CurrentSkill.Data.SkillType;
+        if (type == SkillType.BurstfireSkill || type == SkillType.ContinuousSkill)
+            FloatingCanvasLeft.Instance.SetCooldown(SkillTable.CurrentSkill.Data.Cooldown);
     }
 
     void SwitchSkill(int index)
@@ -31,20 +34,22 @@ public class Player : Unit
         FloatingCanvasLeft.Instance.Switch2Skill(index);
     }
 
+    void triggerShield()
+    {
+        shieldColorController.Trigger();
+    }
+
     public override void Death()
     {
         base.Death();
         Shield.SetActive(false);
     }
 
-    float lastHP = 0f;
-    protected override void Update()
+    public void SetPlayerName(string name)
     {
-        base.Update();
-        if (lastHP > attributes.SheildPoint + 1e-2f)
+        if (GameCtrl.IsOnlineGame && !IsLocal)
         {
-            shieldColorController.Trigger();
+            canvas.SetName(name);
         }
-        lastHP = attributes.SheildPoint;
     }
 }

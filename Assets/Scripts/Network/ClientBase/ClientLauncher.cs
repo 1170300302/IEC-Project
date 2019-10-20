@@ -18,6 +18,7 @@ public class ClientLauncher : MonoBehaviour
     private TimeMgr timeMgr;
     private int ping = 0;
     private long lastSend = 0;
+    public string Local_Player = "";
     private static ClientLauncher clientLauncher;
     public static ClientLauncher Instance
     {
@@ -27,8 +28,18 @@ public class ClientLauncher : MonoBehaviour
         }
     }
 
+    public string[] playerNames = {
+        "Player 1",
+        "Player 2",
+        "Player 3",
+        "Player 4",
+    };
     public static bool IsConnected => Client.Instance.isConnect;
     public static int PlayerID => Client.Instance.pl_info.id_game;
+    public static string GetPlayerName(int ID)
+    {
+        return Instance.playerNames[ID];
+    }
 
     public string message = "";
 
@@ -37,8 +48,10 @@ public class ClientLauncher : MonoBehaviour
         DataSync.Chatting(msg);
     }
 
-    public void InitClient()
+    public void Connect()
     {
+        if (!isLaunched)
+            Launch();
         if (Client.Instance.isConnect)
             return;
         Thread t = new Thread(() =>
@@ -66,6 +79,23 @@ public class ClientLauncher : MonoBehaviour
         t.Start();
     }
 
+    public void Disconnect()
+    {
+        if (!Client.Instance.isConnect)
+            return;
+        Thread t = new Thread(() =>
+        {
+            int i = 0;
+            for (i = 0; Client.Instance.isConnect && i < MAX_CONNECT_TIMES; i++)
+            {
+                Client.Instance.Disconnect();
+            }
+            GameCtrl.IsOnlineGame = false;
+        });
+        t.Start();
+    }
+
+
     public MyActionEvent OnConnected = new MyActionEvent();
 
     public void Awake()
@@ -82,8 +112,6 @@ public class ClientLauncher : MonoBehaviour
         client = Client.Instance;
         timeMgr = new TimeMgr();
         timeMgr.StartTimer();
-        InitClient();
-        SendMsg("olleH! revreS");
         isLaunched = true;
     }
 
@@ -156,11 +184,12 @@ public class ClientLauncher : MonoBehaviour
     }
 
 
+
     public class TimeMgr
     {
         private bool isStart = false;
         //private int instant = 0;
-        private long bias;
+        private long bias = 0;
         private Stopwatch stopwatch = new Stopwatch();
 
         public TimeMgr() { }

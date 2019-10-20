@@ -75,8 +75,15 @@ public class CameraGroupController : MonoBehaviour
         }
     }
 
+    private void OnDestroy()
+    {
+        GameCtrl.PlayerUnitChangeEvent.RemoveListener(OnPlayerChanged);
+    }
+
     private void Update()
     {
+        if (GameCtrl.IsLoading)
+            return;
         if (GameCtrl.PlayerUnit == null)
         {
             return;
@@ -105,7 +112,9 @@ public class CameraGroupController : MonoBehaviour
         {
             return;
         }
-        if (GameCtrl.PlayerUnit.attributes.isAlive)
+        if (GameCtrl.CursorOnGUI)
+            return;
+        if (lockCursor && GameCtrl.PlayerUnit.attributes.isAlive)
         {
             UpdateCameraRotation(Time.fixedDeltaTime);
             SetAngleAroundZAxis(Time.fixedDeltaTime);
@@ -114,6 +123,10 @@ public class CameraGroupController : MonoBehaviour
 
     public void ResetTransform(Vector3 position, Quaternion rotation)
     {
+        if (PositionParent == null)
+        {
+            Debug.LogError("Position Parent is NULL");
+        }
         PositionParent.position = position;
         PositionParent.rotation = Quaternion.identity;
         RotationParent.localRotation = rotation;
@@ -173,6 +186,8 @@ public class CameraGroupController : MonoBehaviour
         }
         else if (Input.GetMouseButtonUp(0) && !lockCursor)
         {
+            if (GameCtrl.CursorOnGUI)
+                return;
             lockCursor = true;
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;

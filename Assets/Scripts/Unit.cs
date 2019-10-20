@@ -12,6 +12,7 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody))]
 public partial class Unit : MonoBehaviour
 {
+    public UnitCanvasController canvas;
     [HideInInspector]
     public Rigidbody rigbody;
     public Transform SpawnTransform;
@@ -48,6 +49,7 @@ public partial class Unit : MonoBehaviour
     public readonly MyActionEvent DeathEvnt = new MyActionEvent();
     public readonly MyActionEvent TakeDmgEvnt = new MyActionEvent();
     public readonly MyActionEvent<int> SwitchSkillEvnt = new MyActionEvent<int>();
+    public readonly MyActionEvent OnHit = new MyActionEvent();
 
     [Header("Network Synchronization")]
     public bool IsLocal = true;
@@ -207,6 +209,7 @@ public partial class Unit : MonoBehaviour
     /// <param name="amount">伤害值</param>
     public virtual void TakeDamage(float amount)
     {
+        OnHit.Trigger();
         if (!IsLocal || !attributes.isAlive)
             return;
         if (amount < 0)
@@ -308,7 +311,7 @@ public partial class Unit : MonoBehaviour
         if (GameCtrl.IsOnlineGame && IsLocal && attributes.name == UnitName.Player)
         {
             Transform t = GameSceneInfo.Instance.spawnPoints[ClientLauncher.PlayerID].transform;
-            DataSync.CreateObject(UnitName.Player, t.position, t.rotation);
+            DataSync.CreateObject(ClientLauncher.PlayerID, UnitName.Player, t.position, t.rotation);
         }
         else if (!GameCtrl.IsOnlineGame)
         {

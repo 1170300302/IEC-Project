@@ -5,11 +5,33 @@ using UnityEngine.SceneManagement;
 
 public partial class GameCtrl
 {
+    public static bool IsLoading { get; private set; }
     AsyncOperation ao;
     public void StartLoadingGameScene()
     {
-        ao = SceneManager.LoadSceneAsync("Game");
-        EventMgr.UpdateEvent.AddListener(_checkIsDone);
+        if (IsLoading)
+            return;
+        IsLoading = true;
+        loadingPanel.StartLoading();
+        Gamef.DelayedExecution(delegate
+        {
+            ao = SceneManager.LoadSceneAsync("Game");
+            EventMgr.UpdateEvent.AddListener(afterLoadGame);
+        }, 0.5f);
+    }
+
+    public void Back2Menu()
+    {
+        if (IsLoading)
+            return;
+        IsLoading = true;
+        Crosshair.SetState(false);
+        loadingPanel.StartLoading();
+        Gamef.DelayedExecution(delegate
+        {
+            ao = SceneManager.LoadSceneAsync("Menu Scene");
+            EventMgr.UpdateEvent.AddListener(afterLoadMenu);
+        }, 0.5f);
     }
 
     public void StartCreatePlayer(int playerID)
@@ -25,24 +47,42 @@ public partial class GameCtrl
         }
         Transform t = GameSceneInfo.Instance.spawnPoints[playerID].transform;
         if (GameCtrl.IsOnlineGame)
-            DataSync.CreateObject(UnitName.Player, t.position, t.rotation);
+            DataSync.CreateObject(ClientLauncher.PlayerID, UnitName.Player, t.position, t.rotation);
         else
         {
             Gamef.CreateLocalUnit(UnitName.Player, t.position, t.rotation);
         }
     }
 
-    private void _checkIsDone()
+    private void afterLoadGame()
     {
         if (ao.isDone)
         {
+            EventMgr.UpdateEvent.RemoveListener(afterLoadGame);
             if (IsOnlineGame)
                 DataSync.CanControll();
             else
             {
                 StartCreatePlayer(0);
+                Gamef.DelayedExecution(delegate { Crosshair.SetState(false); }, 0.7f);
+                Gamef.DelayedExecution(loadingPanel.StopLoading, 0.2f);
             }
-            EventMgr.UpdateEvent.RemoveListener(_checkIsDone);
+            IsLoading = false;
+        }
+    }
+
+
+    private void afterLoadMenu()
+    {
+        if (ao.isDone)
+        {
+            EventMgr.UpdateEvent.RemoveListener(afterLoadMenu);
+            if (IsOnlineGame)
+                ClientLauncher.Instance.Disconnect();
+            Gamef.DelayedExecution(loadingPanel.StopLoading, 0.2f);
+            GameDB.unitPool.Clear();
+            GameDB.missilePool.Clear();
+            IsLoading = false;
         }
     }
 }

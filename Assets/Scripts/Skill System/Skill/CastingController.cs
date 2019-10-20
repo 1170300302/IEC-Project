@@ -123,6 +123,8 @@ public class CastingController : MonoBehaviour
     {
         if (player == null)
             return;
+        if (GameCtrl.CursorOnGUI)
+            return;
 
         int index = -1;
         switch (info.keyCode)
@@ -153,6 +155,8 @@ public class CastingController : MonoBehaviour
     {
         if (player == null)
             return;
+        if (GameCtrl.CursorOnGUI)
+            return;
         if (GameCtrl.IsOnlineGame)
         {
             lock (castingMutex)
@@ -171,7 +175,7 @@ public class CastingController : MonoBehaviour
             // 为技能设置目标
             if (skillTable.CurrentSkill.Data.IsTracking && skillTable.CurrentSkill is ITracking it)
             {
-                it.Target = AimController.Instance.TargetForStrafeSkill;
+                it.Target = AimController.Instance.Target;
             }
             skillTable.CurrentCell.Start();
         }
@@ -180,6 +184,8 @@ public class CastingController : MonoBehaviour
     private void CellMouseBTNUp(EventMgr.MouseButtonUpEventInfo info)
     {
         if (player == null)
+            return;
+        if (GameCtrl.CursorOnGUI)
             return;
         if (GameCtrl.IsOnlineGame)
         {

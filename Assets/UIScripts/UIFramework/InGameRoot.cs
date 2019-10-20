@@ -4,21 +4,29 @@ using UnityEngine;
 
 public class InGameRoot : MonoBehaviour
 {
-    private bool isEnter = false;
+    public static InGameRoot Instance { get; private set; }
+
+    private void Awake()
+    {
+        Instance = this;
+    }
 
     private void Start()
     {
         UIManager.Instance.UIStackClean();
-        UIManager.Instance.RestartDictionary();
+        UIManager.Instance.RestartDictionary(PanelType.Esc);
     }
 
     private void Update()
     {
-        if(!isEnter)
+        if (Input.GetKeyUp(KeyCode.Escape))
         {
-            if (Input.GetKeyDown(KeyCode.Escape))
+            if (EscPanel.IsEnter)
             {
-                isEnter = true;
+                UIManager.Instance.PopPanel(PanelType.Esc);
+            }
+            else
+            {
                 UIManager.Instance.PushPanel(PanelType.Esc);
             }
         }

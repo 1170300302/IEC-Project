@@ -57,7 +57,11 @@ public class MoveController : MonoBehaviour
             DataSync.SyncTransform(unit, instant, unit.transform.position, unit.transform.rotation, rb.velocity.magnitude);
         }
     }
+    [SerializeField]
+    long instant;
+    [SerializeField]
     long lastSyncA;
+    [SerializeField]
     long lastSyncT;
     private void Update()
     {
@@ -83,24 +87,30 @@ public class MoveController : MonoBehaviour
         //}
         //else
         //{
-        h = InputMgr.GetHorizontalAxis();
-        v = InputMgr.GetVerticalAxis();
+        if (GameCtrl.CursorOnGUI)
+        {
+            h = 0;
+            v = 0;
+        }
+        else
+        {
+            h = InputMgr.GetHorizontalAxis();
+            v = InputMgr.GetVerticalAxis();
+        }
         camFwd = CameraGroupController.Instance.transform.forward;
         //}
-
         mover.V = v;
         mover.H = h;
         mover.CameraForward = camFwd;
-
         if (GameCtrl.IsOnlineGame)
         {
             Unit unit = GameCtrl.PlayerUnit;
-            long instant = Gamef.SystemTimeInMillisecond;
-            if (instant - lastSyncA >= 33)
+            instant = Gamef.SystemTimeInMillisecond;
+            if (instant - lastSyncA >= GameDB.SYNC_AC_INTERVAL)
             {
-                if (instant - lastSyncA <= 40)
+                if (instant - lastSyncA <= GameDB.SYNC_AC_INTERVAL + 8)
                 {
-                    lastSyncA += 33;
+                    lastSyncA += GameDB.SYNC_AC_INTERVAL;
                 }
                 else
                 {
@@ -108,11 +118,11 @@ public class MoveController : MonoBehaviour
                 }
                 DataSync.SyncMobileControlAxes(unit, instant, Mathf.RoundToInt(h), Mathf.RoundToInt(v), CameraGroupController.Instance.transform.forward);
             }
-            if (instant - lastSyncT >= 300)
+            if (instant - lastSyncT >= GameDB.SYNC_TRANSFORM_INTERVAL)
             {
-                if (instant - lastSyncT <= 350)
+                if (instant - lastSyncT <= GameDB.SYNC_TRANSFORM_INTERVAL + 30)
                 {
-                    lastSyncT += 300;
+                    lastSyncT += GameDB.SYNC_TRANSFORM_INTERVAL;
                 }
                 else
                 {

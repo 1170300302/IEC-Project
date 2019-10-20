@@ -86,7 +86,11 @@ namespace ClientBase
             ProtocolBytes proto = (ProtocolBytes)protocol;
             proto.GetNameX(start, ref start);
             Client.Instance.pl_info.id_game = proto.GetByte(start, ref start);
-
+            int playerNum = proto.GetByte(start, ref start);
+            for (int i = 0; i < playerNum; i++)
+            {
+                ClientLauncher.Instance.playerNames[i] = proto.GetString(start, ref start);
+            }
             //Loading
             GameCtrl.Instance.StartLoadingGameScene();
         }
@@ -95,6 +99,8 @@ namespace ClientBase
         {
             //...
             GameCtrl.Instance.StartCreatePlayer(Client.Instance.pl_info.id_game);
+            Gamef.DelayedExecution(GameCtrl.Instance.loadingPanel.StopLoading, 0.2f);
+            Gamef.DelayedExecution(delegate{ Crosshair.SetState(true); }, 0.7f);
         }
 
         #endregion
@@ -106,6 +112,7 @@ namespace ClientBase
             int start = 0;
             ProtocolBytes proto = (ProtocolBytes)protocol;
             proto.GetNameX(start, ref start);
+            int playerID = proto.GetByte(start, ref start);
             UnitName unitName = (UnitName)proto.GetByte(start, ref start);
             Vector3 pos = ParseVector3(proto, ref start);
             Quaternion rot = ParseQuaternion(proto, ref start);
@@ -118,10 +125,17 @@ namespace ClientBase
             //set id
             Unit unit = gameObj.GetComponent<Unit>();
             unit.InitAttributes(unitId);
-            if (unitName == UnitName.Player && isLocal)
+            if (unitName == UnitName.Player)
             {
-                CameraGroupController.Instance.ResetTransform(pos, rot);
-                GameCtrl.PlayerUnit = unit;
+                if (isLocal)
+                {
+                    CameraGroupController.Instance.ResetTransform(pos, rot);
+                    GameCtrl.PlayerUnit = unit;
+                }
+                else
+                {
+                    (unit as Player).SetPlayerName(ClientLauncher.GetPlayerName(playerID));
+                }
             }
         }
 
@@ -152,6 +166,11 @@ namespace ClientBase
             Unit unit = Gamef.GetUnit(id);
             Vector3 position = ParseVector3(proto, ref start);
             Quaternion rot = ParseQuaternion(proto, ref start);
+            if (unit == null)
+            {
+                Debug.Log(string.Format("NOT EXIST unit {0} recv sync position {1}", unit.attributes.ID, position));
+                return;
+            }
             float speed = proto.GetFloat(start, ref start);
             unit.SyncMovement.SyncTransform(instant, position, rot, speed);
         }
@@ -169,6 +188,11 @@ namespace ClientBase
             Vector3 fwd = ParseVector3(proto, ref start);// parse camera forward
 
             Unit unit = Gamef.GetUnit(id);
+            if (unit == null)
+            {
+                Debug.Log(string.Format("NOT EXIST unit {0} recv sync ac", unit.attributes.ID));
+                return;
+            }
             unit.SyncPlayerInput.SyncMobileControlAxes(instant, hv[0], hv[1], fwd);
         }
 
@@ -181,7 +205,7 @@ namespace ClientBase
             int id = proto.GetByte(start, ref start);
             int skillIndex = proto.GetByte(start, ref start);
             Unit unit = Gamef.GetUnit(id);
-            unit.SyncPlayerInput.SyncSwitchSkill(instant, skillIndex);
+            unit?.SyncPlayerInput.SyncSwitchSkill(instant, skillIndex);
         }
 
         public static void SyncMouseButton0Down(ProtocolBase protocol)
@@ -192,7 +216,8 @@ namespace ClientBase
             long instant = proto.GetInt(start, ref start);
             int id = proto.GetByte(start, ref start);
             Unit unit = Gamef.GetUnit(id);
-            unit.SyncPlayerInput.SyncMouseButton0Down(instant);
+            Debug.Log(string.Format("unit {0} recv btn down casting at {1}, in fact {2}", unit.attributes.ID, instant, Gamef.SystemTimeInMillisecond));
+            unit?.SyncPlayerInput.SyncMouseButton0Down(instant);
         }
 
         public static void SyncMouseButton0Up(ProtocolBase protocol)
@@ -203,7 +228,8 @@ namespace ClientBase
             long instant = proto.GetInt(start, ref start);
             int id = proto.GetByte(start, ref start);
             Unit unit = Gamef.GetUnit(id);
-            unit.SyncPlayerInput.SyncMouseButton0Up(instant);
+            Debug.Log(string.Format("unit {0} recv btn up casting at {1}, in fact {2}", unit.attributes.ID, instant, Gamef.SystemTimeInMillisecond));
+            unit?.SyncPlayerInput.SyncMouseButton0Up(instant);
         }
         #endregion
 
@@ -246,7 +272,7 @@ namespace ClientBase
             }
             Unit unit = Gamef.GetUnit(sourceId);
             Debug.Log(string.Format("Send sync target ID {0} -> ID {1}", sourceId, targetId));
-            unit.SyncPlayerCastingState.SyncTarget(instant, Gamef.GetUnit(targetId));
+            unit?.SyncPlayerCastingState.SyncTarget(instant, Gamef.GetUnit(targetId));
         }
 
         #endregion
